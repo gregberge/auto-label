@@ -1,19 +1,57 @@
+function getActiveLabels(config, commits) {
+  const types = Object.entries(config.types).map(([label, value]) => ({
+    label,
+    regexp: new RegExp(value)
+  }));
+
+  return commits.reduce((labels, commit) => {
+    function addLabel(label) {
+      if (!labels.includes(label)) {
+        labels.push(label);
+      }
+    }
+
+    types.forEach(type => {
+      if (type.regexp.test(commit.commit.message)) {
+        addLabel(type.label);
+      }
+    });
+
+    return labels;
+  }, []);
+}
+
 /**
  * This is the main entrypoint to your Probot app
  * @param {import('probot').Application} app
  */
 module.exports = app => {
-  // Your code here
-  app.log('Yay, the app was loaded!')
-
-  app.on('issues.opened', async context => {
-    const issueComment = context.issue({ body: 'Thanks for opening this issue!' })
-    return context.github.issues.createComment(issueComment)
-  })
-
-  // For more information on building apps:
-  // https://probot.github.io/docs/
-
-  // To get your app running against GitHub, see:
-  // https://probot.github.io/docs/development/
-}
+  app.on(
+    ["pull_request.opened", "pull_request.edited", "pull_request.synchronize"],
+    async context => {
+      const config = await context.config(`auto-label.yml`, { types: {} });
+      const { owner, repo } = context.repo();
+      const {
+        payload: {
+          pull_request: { number, labels: prLabels }
+        }
+      } = context;
+      const { data: commits } = await context.github.pulls.listCommits({
+        owner,
+        repo,
+        pull_number: number
+      });
+      const activeLabels = getActiveLabels(config, commits);
+      const oldLabels = prLabels.map(label => label.name);
+      const upToDate = activeLabels.every(label => oldLabels.includes(label));
+      if (upToDate) return;
+      const newLabels = Array.from(new Set([...oldLabels, ...activeLabels]));
+      await context.github.issues.addLabels({
+        owner,
+        repo,
+        issue_number: number,
+        labels: newLabels
+      });
+    }
+  );
+};
