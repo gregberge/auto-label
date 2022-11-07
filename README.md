@@ -1,5 +1,7 @@
 # auto-label
 
+> :warning: **This project is present for archive, it does not run in production any more.**
+
 > A GitHub App built with [Probot](https://github.com/probot/probot) that Automatically apply labels on issues.
 
 ## Setup
