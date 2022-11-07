@@ -1,6 +1,6 @@
 # auto-label
 
-> :warning: **This project is present for archive, it does not run in production any more.**
+> :warning: **This project is present for archive, it does not run in production any more.** Use https://github.com/lemonde/auto-label-action instead.
 
 > A GitHub App built with [Probot](https://github.com/probot/probot) that Automatically apply labels on issues.
 
